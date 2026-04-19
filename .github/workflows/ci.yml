@@ -1,18 +1,48 @@
-name: Run Tests Manually
+name: Run tests and publish report
 
 on:
   workflow_dispatch:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # <-- добавляем это
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - run: pip install pytest
-      - run: pytest
+
+      - name: Install dependencies
+        run: pip install pytest allure-pytest
+
+      - name: Run tests
+        run: pytest --alluredir=allure-results
+
+      # 1. Загрузить историю предыдущих отчётов
+      - name: Load test report history
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      # 2. Собрать новый отчёт с историей
+      - name: Build test report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          gh_pages: gh-pages
+          allure_history: allure-history
+          allure_results: allure-results
+
+      # 3. Опубликовать отчёт в ветку gh-pages
+      - name: Publish test report
+        uses: peaceiris/actions-gh-pages@v3
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history
