@@ -6,6 +6,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +22,6 @@ jobs:
       - name: Run tests
         run: pytest --alluredir=allure-results
 
-      # 1. Загрузить историю предыдущих отчётов
       - name: Load test report history
         uses: actions/checkout@v4
         if: always()
@@ -29,7 +30,6 @@ jobs:
           ref: gh-pages
           path: gh-pages
 
-      # 2. Собрать новый отчёт с историей
       - name: Build test report
         uses: simple-elf/allure-report-action@master
         if: always()
@@ -38,10 +38,11 @@ jobs:
           allure_history: allure-history
           allure_results: allure-results
 
-      # 3. Опубликовать отчёт в ветку gh-pages
       - name: Publish test report
         uses: peaceiris/actions-gh-pages@v3
+        if: always()
         with:
-          github_token: ${{ secrets.GH_PAGES_TOKEN }}
+          personal_token: ${{ secrets.GH_PAGES_TOKEN }}
           publish_branch: gh-pages
           publish_dir: allure-history
+          force_orphan: true
