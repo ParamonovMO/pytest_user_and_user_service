@@ -1,7 +1,12 @@
 name: Run tests and publish report
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'   # ночной запуск в 2:00 UTC
+  push:
+    branches:
+      - main           
+  workflow_dispatch:  
 
 jobs:
   test:
@@ -10,18 +15,14 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-
       - name: Install dependencies
         run: pip install pytest allure-pytest
-
       - name: Run tests
         run: pytest --alluredir=allure-results
-
       - name: Load test report history
         uses: actions/checkout@v4
         if: always()
@@ -29,7 +30,6 @@ jobs:
         with:
           ref: gh-pages
           path: gh-pages
-
       - name: Build test report
         uses: simple-elf/allure-report-action@master
         if: always()
@@ -37,7 +37,6 @@ jobs:
           gh_pages: gh-pages
           allure_history: allure-history
           allure_results: allure-results
-
       - name: Publish test report
         uses: peaceiris/actions-gh-pages@v3
         if: always()
